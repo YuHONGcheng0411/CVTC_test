@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图像标注工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result {
+            margin-top: 20px;
+        }
+        .result-item {
+            margin: 10px 0;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>图像标注工具</h1>
+    <div class="form-container">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="file">选择图像（PNG/JPG/JPEG）:</label>
+            <input type="file" id="file" name="file" accept=".png,.jpg,.jpeg" required>
+
+            <label for="target_class">目标类别:</label>
+            <select id="target_class" name="target_class" required>
+                <option value="0">MildDemented (0)</option>
+                <option value="1">ModerateDemented (1)</option>
+                <option value="2">NonDemented (2)</option>
+                <option value="3">VeryMildDemented (3)</option>
+            </select>
+
+            <button type="submit">提交</button>
+        </form>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>处理中...</p>';
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('file').files[0]);
+            formData.append('target_class', document.getElementById('target_class').value);
+
+            try {
+                const response = await fetch('/annotate', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result-item">
+                            <p><strong>处理结果:</strong> ${result.message}</p>
+                            <p><a href="${result.excel_file}" download>下载 Excel 文件</a></p>
+                            <p><strong>标注图像:</strong></p>
+                            <img src="${result.annotated_image}" alt="Annotated Image">
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">错误: ${result.detail}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">请求失败: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
